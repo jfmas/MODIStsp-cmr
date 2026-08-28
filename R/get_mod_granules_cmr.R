@@ -58,15 +58,21 @@ get_mod_granules_cmr <- function(short_name,
   )
 
   # Server-side tile filter (only for tiled products with tiles requested) ----
-  # For each hXXvYY combination add a `readable_granule_name[]=*.hXXvYY.*`
-  # entry, all OR-ed together, enabling the pattern option.
+  # For each hXXvYY combination add a `readable_granule_name[]` pattern, all
+  # OR-ed together, enabling the pattern option. The pattern is anchored on the
+  # product short name (e.g. "MOD13Q1.A*.h18v04.*") rather than a leading
+  # wildcard ("*.h18v04.*"): CMR rejects queries with more than 5 leading-
+  # wildcard conditions, so a leading wildcard would cap tile filtering at ~2
+  # tiles and 400 on larger extents. Anchoring on the (fixed) short name avoids
+  # the leading wildcard entirely, so any number of tiles works.
   if (tiled == 1 && length(v) > 0 && length(h) > 0) {
     patterns <- character()
     for (vv in v) {
       for (hh in h) {
         vc <- formatC(vv, width = 2, flag = "0")
         hc <- formatC(hh, width = 2, flag = "0")
-        patterns <- c(patterns, paste0("*.h", hc, "v", vc, ".*"))
+        patterns <- c(patterns,
+                      paste0(short_name, ".A*.h", hc, "v", vc, ".*"))
       }
     }
     # httr2 repeats the parameter when a value is a length>1 vector
